@@ -8,10 +8,10 @@ export function Navbar() {
 
   return (
     <nav className="w-full flex items-center justify-between p-4 bg-black/50 backdrop-blur-md border-b border-white/10 fixed top-0 z-50">
-      <div className="flex items-center gap-2">
-        <PlayCircle className="text-red-500 w-8 h-8" />
-        <span className="text-xl font-bold tracking-tight text-white hidden sm:block">
-          YT Downloader
+      <div className="flex items-center gap-3">
+        <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-red-600/20 object-cover" />
+        <span className="text-2xl font-extrabold tracking-tight text-white">
+          मन्मथ's Music
         </span>
       </div>
       
