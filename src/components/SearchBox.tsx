@@ -8,6 +8,7 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
         const res = await fetch(`/api/suggestions?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         setSuggestions(data);
+        setActiveIndex(-1); // reset active index on new suggestions
       } catch (e) {
         console.error(e);
       }
@@ -46,6 +48,30 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
     e.preventDefault();
     if (query.trim()) {
       onSearch(query.trim());
+      setIsOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen || suggestions.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && activeIndex < suggestions.length) {
+        e.preventDefault();
+        const selected = suggestions[activeIndex];
+        setQuery(selected);
+        onSearch(selected);
+        setIsOpen(false);
+        setActiveIndex(-1);
+      }
+    } else if (e.key === "Escape") {
       setIsOpen(false);
     }
   };
@@ -69,6 +95,7 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
+            onKeyDown={handleKeyDown}
             autoComplete="off"
           />
         </div>
@@ -87,11 +114,14 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
               {suggestions.map((suggestion, idx) => (
                 <li
                   key={idx}
-                  className="px-6 py-3 hover:bg-white/10 cursor-pointer text-gray-200 transition-colors flex items-center gap-3"
+                  className={`px-6 py-3 cursor-pointer text-gray-200 transition-colors flex items-center gap-3 ${
+                    idx === activeIndex ? "bg-white/20" : "hover:bg-white/10"
+                  }`}
                   onClick={() => {
                     setQuery(suggestion);
                     onSearch(suggestion);
                     setIsOpen(false);
+                    setActiveIndex(-1);
                   }}
                 >
                   <Search className="w-4 h-4 text-gray-500" />

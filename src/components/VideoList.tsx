@@ -23,20 +23,26 @@ function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
   const handleDownload = async () => {
     setDownloadState("loading");
     try {
-      // Trigger download by opening a new window or creating an anchor tag
-      // For mp3, we will hit our Next.js API route that converts and streams it
       const url = `/api/download?id=${video.id}&title=${encodeURIComponent(video.title)}`;
       
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Download failed");
+      
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       a.download = `${video.title}.mp3`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
       
       setDownloadState("success");
       setTimeout(() => setDownloadState("idle"), 3000);
     } catch (e) {
+      console.error(e);
       setDownloadState("error");
       setTimeout(() => setDownloadState("idle"), 3000);
     }
