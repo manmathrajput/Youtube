@@ -79,13 +79,9 @@ export function SearchBox({ onSearch }: { onSearch: (q: string) => void }) {
   return (
     <div className="relative w-full max-w-3xl mx-auto" ref={wrapperRef}>
       <form onSubmit={handleSearch} className="relative z-10">
-        <div className="relative flex items-center w-full h-16 rounded-full focus-within:shadow-lg bg-[#121212] border border-white/20 overflow-hidden transition-all duration-300">
-          <div className="grid place-items-center h-full w-16 text-gray-400">
-            <Search className="w-6 h-6" />
-          </div>
-
+        <div className="relative flex items-center w-full h-[52px] rounded-full focus-within:shadow-lg focus-within:shadow-red-600/10 bg-[#1a1a1a] border border-white/10 focus-within:border-white/30 overflow-hidden transition-all duration-300">
           <input
-            className="peer h-full w-full outline-none text-lg text-white bg-transparent pr-4 placeholder-gray-500 font-medium"
+            className="peer h-full w-full outline-none text-base text-white bg-transparent px-6 placeholder-gray-500 font-medium"
             type="text"
             id="search"
             placeholder="Search YouTube videos..."

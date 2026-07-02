@@ -66,17 +66,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white">
-      <Navbar />
-      
-      <div className="pt-24 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-        
-        {/* Sticky Search & Liked Actions Header */}
-        <div className="sticky top-[72px] z-40 w-full max-w-4xl bg-[#0f0f0f]/95 backdrop-blur-md py-4 flex flex-col gap-3 border-b border-white/5">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <SearchBox onSearch={handleSearch} />
-            </div>
-            
+      {/* Desktop Navbar contains the SearchBox as children */}
+      <div className="hidden md:block">
+        <Navbar>
+          <div className="w-full flex items-center gap-4">
+            <SearchBox onSearch={handleSearch} />
             {session && (
               <button
                 onClick={() => {
@@ -87,30 +81,66 @@ export default function Home() {
                     fetchLikedVideos();
                   }
                 }}
-                className={`p-4 rounded-full transition-colors flex-shrink-0 flex items-center justify-center ${
+                className={`p-3 rounded-full transition-colors shrink-0 flex items-center justify-center ${
                   mode === "liked" ? "bg-red-600 text-white shadow-lg shadow-red-600/30" : "bg-[#121212] border border-white/20 text-gray-400 hover:text-white"
                 }`}
                 title="My Liked Videos"
               >
-                <svg className="w-6 h-6" fill={mode === "liked" ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <svg className="w-5 h-5" fill={mode === "liked" ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </button>
             )}
           </div>
+        </Navbar>
+      </div>
 
-          {/* Filter Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {filters.map((filter) => (
+      {/* Mobile Navbar (no children) */}
+      <div className="block md:hidden">
+        <Navbar />
+      </div>
+      
+      <div className="pt-[80px] px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        
+        {/* Mobile Sticky Search & Liked Actions (Hidden on Desktop) */}
+        <div className="sticky top-[72px] z-40 w-full bg-[#0f0f0f]/95 backdrop-blur-md py-3 flex flex-col gap-3 md:hidden">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <SearchBox onSearch={handleSearch} />
+            </div>
+            {session && (
               <button
-                key={filter}
-                onClick={() => handleSearch(filter)}
-                className="whitespace-nowrap px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
+                onClick={() => {
+                  if (mode === "liked") {
+                    setMode("search");
+                  } else {
+                    setMode("liked");
+                    fetchLikedVideos();
+                  }
+                }}
+                className={`p-3.5 rounded-full transition-colors flex-shrink-0 flex items-center justify-center ${
+                  mode === "liked" ? "bg-red-600 text-white shadow-lg shadow-red-600/30" : "bg-[#121212] border border-white/20 text-gray-400 hover:text-white"
+                }`}
               >
-                {filter}
+                <svg className="w-5 h-5" fill={mode === "liked" ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
               </button>
-            ))}
+            )}
           </div>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="w-full max-w-4xl flex gap-2 overflow-x-auto pb-2 pt-2 scrollbar-hide">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => handleSearch(filter)}
+              className="whitespace-nowrap px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors border border-white/5"
+            >
+              {filter}
+            </button>
+          ))}
         </div>
 
         <div className="w-full mt-4">

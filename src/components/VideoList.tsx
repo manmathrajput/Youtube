@@ -1,52 +1,59 @@
 "use client";
 
 import { YouTubeVideo } from "@/types/youtube";
-import { Download, Loader2, CheckCircle } from "lucide-react";
+import { Download, Loader2, CheckCircle, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import YouTube, { YouTubeEvent } from "react-youtube";
 
 export function VideoList({ videos }: { videos: YouTubeVideo[] }) {
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+
   if (videos.length === 0) return null;
+
+  const handleVideoEnd = (index: number) => {
+    // Autoplay the next video in the list
+    if (index + 1 < videos.length) {
+      setPlayingIndex(index + 1);
+    } else {
+      setPlayingIndex(null);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto mt-12">
       {videos.map((video, idx) => (
-        <VideoCard key={video.id} video={video} index={idx} />
+        <VideoCard 
+          key={video.id} 
+          video={video} 
+          index={idx} 
+          isPlaying={playingIndex === idx}
+          onPlay={() => setPlayingIndex(idx)}
+          onEnd={() => handleVideoEnd(idx)}
+        />
       ))}
     </div>
   );
 }
 
-function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
+function VideoCard({ 
+  video, 
+  index, 
+  isPlaying,
+  onPlay,
+  onEnd
+}: { 
+  video: YouTubeVideo; 
+  index: number;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onEnd: () => void;
+}) {
   const [downloadState, setDownloadState] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [showDownloader, setShowDownloader] = useState(false);
 
-  const handleDownload = async () => {
-    setDownloadState("loading");
-    try {
-      const url = `/api/download?id=${video.id}&title=${encodeURIComponent(video.title)}`;
-      
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Download failed");
-      
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `${video.title}.m4a`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
-      setDownloadState("success");
-      setTimeout(() => setDownloadState("idle"), 3000);
-    } catch (e) {
-      console.error(e);
-      setDownloadState("error");
-      setTimeout(() => setDownloadState("idle"), 3000);
-    }
+  const handleDownload = () => {
+    setShowDownloader(true);
   };
 
   return (
@@ -58,25 +65,29 @@ function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
     >
       <div className="relative aspect-video overflow-hidden bg-black flex items-center justify-center">
         {isPlaying ? (
-          <iframe
-            className="w-full h-full"
-            src={`https://www.youtube.com/embed/${video.id}?autoplay=1`}
-            title={video.title}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
+          <YouTube 
+            videoId={video.id}
+            opts={{
+              height: '100%',
+              width: '100%',
+              playerVars: {
+                autoplay: 1,
+              },
+            }}
+            onEnd={onEnd}
+            className="w-full h-full absolute inset-0"
+          />
         ) : (
           <>
             <img
               src={video.thumbnail}
               alt={video.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
-              onClick={() => setIsPlaying(true)}
+              onClick={onPlay}
             />
             <div 
               className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center"
-              onClick={() => setIsPlaying(true)}
+              onClick={onPlay}
             >
               <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
                 <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -102,38 +113,26 @@ function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
         <p className="text-gray-400 text-sm mt-2">{video.channelTitle}</p>
         
         <div className="mt-auto pt-4 flex justify-end">
-          <button
-            onClick={handleDownload}
-            disabled={downloadState === "loading"}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              downloadState === "loading"
-                ? "bg-gray-700 text-gray-300 cursor-not-allowed"
-                : downloadState === "error"
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : downloadState === "success"
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-600/20"
-            }`}
-          >
-            {downloadState === "loading" ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Converting...
-              </>
-            ) : downloadState === "success" ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Downloaded
-              </>
-            ) : downloadState === "error" ? (
-              <>Failed. Retry?</>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Download Audio
-              </>
-            )}
-          </button>
+          {showDownloader ? (
+            <a
+              href={`https://cobalt.tools/?v=https://www.youtube.com/watch?v=${video.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setTimeout(() => setShowDownloader(false), 2000)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-green-600 hover:bg-green-700 text-white shadow-lg"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Download via Cobalt
+            </a>
+          ) : (
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-600/20"
+            >
+              <Download className="w-4 h-4" />
+              Download Audio
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
