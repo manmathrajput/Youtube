@@ -55,73 +55,66 @@ export default function Home() {
     <main className="min-h-screen bg-[#0f0f0f] text-white">
       <Navbar />
       
-      <div className="pt-32 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-4">
-            Convert & Download
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
-              YouTube to MP3
-            </span>
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-8">
-            Search for your favorite music or videos, and download them instantly in high-quality MP3 format. Fast, free, and responsive.
-          </p>
-
+      <div className="pt-24 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        
+        {/* Sticky Search & Liked Actions Header */}
+        <div className="sticky top-[72px] z-40 w-full max-w-4xl bg-[#0f0f0f]/95 backdrop-blur-md py-4 flex items-center gap-4 border-b border-white/5">
+          <div className="flex-1">
+            <SearchBox onSearch={handleSearch} />
+          </div>
+          
           {session && (
-            <div className="flex gap-4 justify-center mb-8">
-              <button
-                onClick={() => setMode("search")}
-                className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-                  mode === "search" ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20"
-                }`}
-              >
-                Search
-              </button>
-              <button
-                onClick={() => {
+            <button
+              onClick={() => {
+                if (mode === "liked") {
+                  setMode("search");
+                } else {
                   setMode("liked");
                   fetchLikedVideos();
-                }}
-                className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-                  mode === "liked" ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20"
-                }`}
-              >
-                My Liked Videos
-              </button>
-            </div>
+                }
+              }}
+              className={`p-4 rounded-full transition-colors flex-shrink-0 flex items-center justify-center ${
+                mode === "liked" ? "bg-red-600 text-white shadow-lg shadow-red-600/30" : "bg-[#121212] border border-white/20 text-gray-400 hover:text-white"
+              }`}
+              title="My Liked Videos"
+            >
+              <svg className="w-6 h-6" fill={mode === "liked" ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
           )}
         </div>
 
-        {mode === "search" && <SearchBox onSearch={handleSearch} />}
-
-        {mode === "search" ? (
-          isLoading ? (
-            <div className="mt-20 flex flex-col items-center gap-4 text-gray-400">
-              <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-              <p className="font-medium">Searching YouTube...</p>
-            </div>
+        <div className="w-full mt-4">
+          {mode === "search" ? (
+            isLoading ? (
+              <div className="mt-20 flex flex-col items-center gap-4 text-gray-400">
+                <Loader2 className="w-10 h-10 animate-spin text-red-500" />
+                <p className="font-medium">Searching YouTube...</p>
+              </div>
+            ) : (
+              <VideoList videos={videos} />
+            )
           ) : (
-            <VideoList videos={videos} />
-          )
-        ) : (
-          isLikedLoading ? (
-            <div className="mt-20 flex flex-col items-center gap-4 text-gray-400">
-              <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-              <p className="font-medium">Loading your liked videos...</p>
-            </div>
-          ) : (
-            <>
-              {likedVideos.length === 0 ? (
-                <div className="mt-20 text-gray-400 text-center">
-                  <p className="text-xl font-medium mb-2">No liked videos found.</p>
-                  <p>Make sure you have liked some videos on YouTube.</p>
-                </div>
-              ) : (
-                <VideoList videos={likedVideos} />
-              )}
-            </>
-          )
-        )}
+            isLikedLoading ? (
+              <div className="mt-20 flex flex-col items-center gap-4 text-gray-400">
+                <Loader2 className="w-10 h-10 animate-spin text-red-500" />
+                <p className="font-medium">Loading your liked videos...</p>
+              </div>
+            ) : (
+              <>
+                {likedVideos.length === 0 ? (
+                  <div className="mt-20 text-gray-400 text-center">
+                    <p className="text-xl font-medium mb-2">No liked videos found.</p>
+                    <p>Make sure you have liked some videos on YouTube.</p>
+                  </div>
+                ) : (
+                  <VideoList videos={likedVideos} />
+                )}
+              </>
+            )
+          )}
+        </div>
       </div>
     </main>
   );

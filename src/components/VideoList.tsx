@@ -34,7 +34,7 @@ function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
       
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = `${video.title}.mp3`;
+      a.download = `${video.title}.m4a`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -130,7 +130,7 @@ function VideoCard({ video, index }: { video: YouTubeVideo; index: number }) {
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Download MP3
+                Download Audio
               </>
             )}
           </button>
