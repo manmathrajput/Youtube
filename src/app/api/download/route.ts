@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
-import "sadaslk-dlcore"; // Dummy import to ensure Next.js standalone bundle includes this dependency
-
-const execAsync = promisify(exec);
+// @ts-ignore
+import yt from "@vreden/youtube_scraper";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +15,13 @@ export async function GET(request: Request) {
   const url = `https://www.youtube.com/watch?v=${id}`;
 
   try {
-    const { stdout } = await execAsync(`node -e "require('sadaslk-dlcore').ytmp3('${url}').then(res => console.log(JSON.stringify(res))).catch(err => { console.error(err); process.exit(1); })"`);
-    const result = JSON.parse(stdout.trim());
+    const result = await yt.ytmp3(url);
     
-    if (!result || !result.url) {
+    if (!result || !result.status || !result.download || !result.download.url) {
       return new NextResponse("Failed to get download URL", { status: 500 });
     }
 
-    return NextResponse.redirect(result.url);
+    return NextResponse.redirect(result.download.url);
   } catch (error: any) {
     console.error("Download Error:", error);
     return new NextResponse(`Failed to download audio: ${error?.message || String(error)}`, { status: 500 });
