@@ -53,7 +53,15 @@ function VideoCard({
   const [showDownloader, setShowDownloader] = useState(false);
 
   const handleDownload = () => {
-    setShowDownloader(true);
+    setDownloadState("loading");
+    // Trigger download seamlessly via our API route
+    window.location.href = `/api/download?id=${video.id}`;
+    
+    // Simulate loader completion since the browser handles the download stream natively
+    setTimeout(() => {
+      setDownloadState("success");
+      setTimeout(() => setDownloadState("idle"), 3000);
+    }, 2000);
   };
 
   return (
@@ -113,26 +121,32 @@ function VideoCard({
         <p className="text-gray-400 text-sm mt-2">{video.channelTitle}</p>
         
         <div className="mt-auto pt-4 flex justify-end">
-          {showDownloader ? (
-            <a
-              href={`https://cobalt.tools/?v=https://www.youtube.com/watch?v=${video.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setTimeout(() => setShowDownloader(false), 2000)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-green-600 hover:bg-green-700 text-white shadow-lg"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Download via Cobalt
-            </a>
-          ) : (
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-600/20"
-            >
-              <Download className="w-4 h-4" />
-              Download Audio
-            </button>
-          )}
+          <button
+            onClick={handleDownload}
+            disabled={downloadState === "loading" || downloadState === "success"}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${
+              downloadState === "success" 
+                ? "bg-green-600 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-600/20"
+            }`}
+          >
+            {downloadState === "loading" ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </>
+            ) : downloadState === "success" ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Downloaded
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Download Audio
+              </>
+            )}
+          </button>
         </div>
       </div>
     </motion.div>
