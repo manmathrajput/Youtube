@@ -52,16 +52,40 @@ function VideoCard({
   const [downloadState, setDownloadState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [showDownloader, setShowDownloader] = useState(false);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    if (downloadState === "loading") return;
     setDownloadState("loading");
-    // Trigger download seamlessly via our API route
-    window.location.href = `/api/download?id=${video.id}`;
-    
-    // Simulate loader completion since the browser handles the download stream natively
-    setTimeout(() => {
+
+    try {
+      const res = await fetch(`/api/download?id=${video.id}`);
+      if (!res.ok) {
+        throw new Error((await res.text().catch(() => "")) || "Download failed");
+      }
+
+      const blob = await res.blob();
+
+      // Prefer the filename the server set; fall back to the video title.
+      const cd = res.headers.get("Content-Disposition") || "";
+      const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(cd);
+      let name = decodeURIComponent(match?.[1] || match?.[2] || video.title || "audio");
+      if (!name.toLowerCase().endsWith(".mp3")) name += ".mp3";
+
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+
       setDownloadState("success");
       setTimeout(() => setDownloadState("idle"), 3000);
-    }, 2000);
+    } catch (err) {
+      console.error("Download failed:", err);
+      setDownloadState("error");
+      setTimeout(() => setDownloadState("idle"), 3000);
+    }
   };
 
   return (
@@ -125,8 +149,10 @@ function VideoCard({
             onClick={handleDownload}
             disabled={downloadState === "loading" || downloadState === "success"}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${
-              downloadState === "success" 
+              downloadState === "success"
                 ? "bg-green-600 text-white"
+                : downloadState === "error"
+                ? "bg-red-600 hover:bg-red-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-600/20"
             }`}
           >
@@ -139,6 +165,11 @@ function VideoCard({
               <>
                 <CheckCircle className="w-4 h-4" />
                 Downloaded
+              </>
+            ) : downloadState === "error" ? (
+              <>
+                <Download className="w-4 h-4" />
+                Retry
               </>
             ) : (
               <>

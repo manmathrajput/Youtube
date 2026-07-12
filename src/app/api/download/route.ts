@@ -4,6 +4,19 @@ import yt from "@vreden/youtube_scraper";
 
 export const dynamic = "force-dynamic";
 
+// Highest audio bitrate the scraper/savetube exposes.
+const QUALITY = 320;
+
+function sanitizeFilename(name: string): string {
+  return (
+    name
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180) || "audio"
+  );
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
@@ -15,15 +28,53 @@ export async function GET(request: Request) {
   const url = `https://www.youtube.com/watch?v=${id}`;
 
   try {
-    const result = await yt.ytmp3(url);
-    
-    if (!result || !result.status || !result.download || !result.download.url) {
-      return new NextResponse("Failed to get download URL", { status: 500 });
+    const result = await yt.ytmp3(url, QUALITY);
+
+    if (!result?.status || !result?.download?.url) {
+      return new NextResponse("Failed to resolve audio URL", { status: 502 });
     }
 
-    return NextResponse.redirect(result.download.url);
+    const fileUrl: string = result.download.url;
+    let filename = sanitizeFilename(result.download.filename || `${id}.mp3`);
+    if (!filename.toLowerCase().endsWith(".mp3")) filename += ".mp3";
+
+    // Freshly-generated savetube links can 404 for a moment while the file is
+    // still being prepared, so retry a few times before giving up.
+    let upstream: Response | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      upstream = await fetch(fileUrl, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+      });
+      if (upstream.ok && upstream.body) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    if (!upstream || !upstream.ok || !upstream.body) {
+      return new NextResponse("Audio file is not ready, please try again", {
+        status: 504,
+      });
+    }
+
+    // Stream the bytes back to the client as a real file download so the
+    // browser saves it directly instead of navigating away.
+    const headers = new Headers();
+    headers.set("Content-Type", "audio/mpeg");
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(
+        filename
+      )}`
+    );
+    const contentLength = upstream.headers.get("content-length");
+    if (contentLength) headers.set("Content-Length", contentLength);
+    headers.set("Cache-Control", "no-store");
+
+    return new NextResponse(upstream.body, { status: 200, headers });
   } catch (error: any) {
     console.error("Download Error:", error);
-    return new NextResponse(`Failed to download audio: ${error?.message || String(error)}`, { status: 500 });
+    return new NextResponse(
+      `Failed to download audio: ${error?.message || String(error)}`,
+      { status: 500 }
+    );
   }
 }
