@@ -10,6 +10,14 @@ export async function GET(request: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  // The refresh token is gone or was revoked — the user has to reconnect.
+  if ((session as any).error === "RefreshAccessTokenError") {
+    return NextResponse.json(
+      { error: "reauth_required", message: "Please reconnect your YouTube account" },
+      { status: 401 }
+    );
+  }
+
   try {
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: (session as any).accessToken });
