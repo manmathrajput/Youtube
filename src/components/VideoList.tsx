@@ -118,9 +118,13 @@ function VideoCard({
         <div className="mt-auto pt-4 flex justify-end">
           <button
             onClick={handleDownload}
-            disabled={downloadState === "queued" || downloadState === "downloading"}
+            disabled={
+              downloadState === "queued" ||
+              downloadState === "downloading" ||
+              downloadState === "ready"
+            }
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg disabled:opacity-90 ${
-              downloadState === "done"
+              downloadState === "done" || downloadState === "ready"
                 ? "bg-green-600 text-white"
                 : downloadState === "error"
                 ? "bg-red-600 hover:bg-red-700 text-white"
@@ -136,6 +140,11 @@ function VideoCard({
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Downloading…
+              </>
+            ) : downloadState === "ready" ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Ready
               </>
             ) : downloadState === "done" ? (
               <>

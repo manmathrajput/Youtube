@@ -198,6 +198,15 @@ function StatusLine({ item }: { item: DownloadItem }) {
     );
   }
 
+  if (item.status === "ready") {
+    return (
+      <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-400">
+        <CheckCircle className="w-3.5 h-3.5" />
+        <span>Ready — saving with the batch…</span>
+      </div>
+    );
+  }
+
   if (item.status === "done") {
     return (
       <div className="flex items-center gap-1.5 mt-1 text-xs text-green-500">
