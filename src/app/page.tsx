@@ -7,6 +7,7 @@ import { VideoList } from "@/components/VideoList";
 import { YouTubeVideo } from "@/types/youtube";
 import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { DownloadsButton } from "@/components/DownloadsPanel";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -91,6 +92,7 @@ export default function Home() {
                 </svg>
               </button>
             )}
+            <DownloadsButton />
           </div>
         </Navbar>
       </div>
@@ -127,6 +129,7 @@ export default function Home() {
                 </svg>
               </button>
             )}
+            <DownloadsButton className="!p-3.5" />
           </div>
         </div>
 
