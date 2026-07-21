@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -26,8 +27,18 @@ export interface DownloadItem {
   error?: string;
 }
 
+// Persisted record of a song that finished downloading, shown under the
+// "All" tab so history survives reloads.
+export interface DownloadHistoryEntry extends YouTubeVideo {
+  savedAt: number;
+}
+
+const HISTORY_KEY = "yt_download_history";
+const HISTORY_LIMIT = 200;
+
 interface DownloadContextValue {
   items: DownloadItem[];
+  history: DownloadHistoryEntry[];
   activeCount: number;
   isPanelOpen: boolean;
   setPanelOpen: (open: boolean) => void;
@@ -35,6 +46,8 @@ interface DownloadContextValue {
   retry: (id: string) => void;
   remove: (id: string) => void;
   clearFinished: () => void;
+  removeFromHistory: (id: string) => void;
+  clearHistory: () => void;
   statusOf: (id: string) => DownloadStatus | undefined;
 }
 
@@ -63,7 +76,42 @@ function triggerSave(name: string, blob: Blob) {
 
 export function DownloadProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<DownloadItem[]>([]);
+  const [history, setHistory] = useState<DownloadHistoryEntry[]>([]);
   const [isPanelOpen, setPanelOpen] = useState(false);
+
+  // Hydrate download history from localStorage once on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) setHistory(JSON.parse(raw));
+    } catch {
+      /* ignore corrupt/unavailable storage */
+    }
+  }, []);
+
+  const persistHistory = useCallback((next: DownloadHistoryEntry[]) => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    } catch {
+      /* storage full or unavailable — keep it in memory only */
+    }
+  }, []);
+
+  const addToHistory = useCallback(
+    (id: string) => {
+      const video = videoMapRef.current.get(id);
+      if (!video) return;
+      setHistory((prev) => {
+        const next = [
+          { ...video, savedAt: Date.now() },
+          ...prev.filter((h) => h.id !== id),
+        ].slice(0, HISTORY_LIMIT);
+        persistHistory(next);
+        return next;
+      });
+    },
+    [persistHistory]
+  );
 
   // Queue of video ids waiting to be fetched, the raw video data, and the
   // blobs that have been fetched but not yet saved — kept in refs so the async
@@ -92,9 +140,10 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         triggerSave(name, blob);
         patch(id, { status: "done", progress: 1 });
+        addToHistory(id);
       }, i * 350);
     });
-  }, [patch]);
+  }, [patch, addToHistory]);
 
   const fetchOne = useCallback(
     async (id: string) => {
@@ -232,6 +281,22 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const removeFromHistory = useCallback(
+    (id: string) => {
+      setHistory((prev) => {
+        const next = prev.filter((h) => h.id !== id);
+        persistHistory(next);
+        return next;
+      });
+    },
+    [persistHistory]
+  );
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    persistHistory([]);
+  }, [persistHistory]);
+
   const statusOf = useCallback(
     (id: string) => items.find((it) => it.id === id)?.status,
     [items]
@@ -248,6 +313,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
     <DownloadContext.Provider
       value={{
         items,
+        history,
         activeCount,
         isPanelOpen,
         setPanelOpen,
@@ -255,6 +321,8 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
         retry,
         remove,
         clearFinished,
+        removeFromHistory,
+        clearHistory,
         statusOf,
       }}
     >
