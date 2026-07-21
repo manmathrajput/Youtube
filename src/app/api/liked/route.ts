@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { google } from "googleapis";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function GET(request: Request) {
+  const limited = enforceRateLimit(request, "liked", 30, 60_000);
+  if (limited) return limited;
+
   const session = await getServerSession(authOptions);
 
   if (!session || !(session as any).accessToken) {

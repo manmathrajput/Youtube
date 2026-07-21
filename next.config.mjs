@@ -76,6 +76,27 @@ const nextConfig = {
   outputFileTracingIncludes: {
     "/api/**/*": tracedPackages,
   },
+  // Baseline hardening headers applied to every response.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // Stop the site being embedded in an <iframe> elsewhere (clickjacking).
+          { key: "X-Frame-Options", value: "DENY" },
+          // Don't let browsers MIME-sniff responses.
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Minimise referrer leakage to third parties.
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Deny powerful APIs we never use.
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
